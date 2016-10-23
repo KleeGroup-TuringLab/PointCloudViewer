@@ -2,13 +2,19 @@
 #include <ESP8266WiFi.h>
 #include <rgb_lcd.h>
 
+//#define DEBUG
+
 const char* configFile = "/wifi.cfg";
 const char* messageFile = "/message.txt";
+const char* downloadFile = "/download.txt";
 const int LCD_WIDTH = 16;
 const int MAX_MESSAGES = 10;
 const int MESSAGE_ROWS = 3;
 
 rgb_lcd lcd;
+WiFiClientSecure client;
+unsigned long lastSync = 0;
+const unsigned long syncInterval = 60000 * 10;
 
 int colorR = 0;
 int colorG = 0;
@@ -16,10 +22,17 @@ int colorB = 0;
 
 char messages[(LCD_WIDTH + 1) * MESSAGE_ROWS * MAX_MESSAGES];
 int messageCount;
+bool messageLoaded = false;
 
 // Méthode d'initialisation
-void setup() { 
+void setup() {
   SPIFFS.begin();
+
+#ifdef DEBUG
+  Serial.begin(9600);
+  Serial.println();
+  Serial.println("Setup");
+#endif
 
   // Lecture du fichier de configuration
   File f = SPIFFS.open(configFile, "r");
@@ -94,6 +107,107 @@ void readMessages() {
   f.close();  
 
   messageCount = i / MESSAGE_ROWS;
+  messageLoaded = true;
+}
+
+// Lit les données téléchargées et écrit le fichier message.
+void parseDownload() {  
+  File fm = SPIFFS.open(messageFile, "w");
+  File fd = SPIFFS.open(downloadFile, "r");
+
+  // Lecture jusqu'à la fin de l'entête
+  String s = fd.readStringUntil('\n');
+  s.trim();
+  while (s.length() > 0) {
+#ifdef DEBUG
+    Serial.print("Header (");
+    Serial.print(s.length());
+    Serial.print(") : ");
+    Serial.println(s);
+#endif
+    
+    s = fd.readStringUntil('\n');
+    s.trim();
+  }
+
+  // Lecture des données
+  s = fd.readStringUntil('\n');
+  while (s.length() > 0) {
+    // Ecriture sur le fichier de sortie
+    fm.println(s);
+
+#ifdef DEBUG
+    Serial.println(s);
+#endif
+    
+    // Lecture de la ligne suivante
+    s = fd.readStringUntil('\n');
+  }
+  fd.close();
+  fm.close();  
+}
+
+// Récupére le plannig sur GitHub
+bool retrievePlanning() {
+#ifdef DEBUG  
+  Serial.println("Start HTTPS connection");
+#endif
+
+  // Ouverture de la connexion HTTPS
+  if ( !client.connect("raw.githubusercontent.com", 443) ) {
+#ifdef DEBUG  
+    Serial.println("HTTPS connection failed");
+#endif
+    return false;
+  }
+
+#ifdef DEBUG  
+  Serial.println("HTTPS connection succeded");
+#endif
+
+  // Ecriture de la request sur le stream
+  client.println("GET /KleeGroup/turinglab/master/IOT/LcdPlanning/planning.txt HTTP/1.1");
+  client.print("Host: ");
+  client.println("raw.githubusercontent.com");
+  client.println("Connection: close");
+  client.println();
+
+  delay(1);
+
+  // Ouverture du fichier
+  File f = SPIFFS.open(downloadFile, "w");
+
+  // Ecoute jusqu'à la fermeture de la connexion par le serveur
+  // Lecture des données
+  while (client.connected()) {
+    if (client.available()) {
+      char c = client.read();
+      f.print(c);
+
+#ifdef DEBUG  
+      Serial.print(c);
+#endif
+    }
+
+    // Delay pour rendre la main à l'ESP9266 pour les traitements Wifi
+    delay(1);
+  }
+
+  // Lecture de la fin du flux
+  while (client.available()) {
+    char c = client.read();
+    f.print(c);
+
+#ifdef DEBUG  
+    Serial.print(c);
+#endif
+  }
+
+  // Fermeture de la socket et du fichier
+  client.stop();
+  f.close();
+
+  return true;
 }
 
 // Boucle principale
@@ -103,16 +217,30 @@ void loop() {
       lcd.setRGB(colorR, colorG, colorB); 
     } else {
       lcd.setColor(GREEN);
-    }
-    
-    int cycle = millis() / 1000 % (messageCount * 10);
-    int cycle2 = (millis() % 5000) / 2500;
-    cycle = cycle / 10;
 
-    lcd.home();
-    lcd.print(messages + (17 * cycle * 3));
-    lcd.setCursor(0, 1);
-    lcd.print(messages + (17 * (cycle * 3 + cycle2 + 1)));
+      if ((millis() - lastSync > syncInterval) || (lastSync == 0)) {
+        if (retrievePlanning()) {
+          lastSync = millis();
+
+          // Traite le téléchargement
+          parseDownload();
+
+          // Met à jour les messages.
+          readMessages();
+        }
+      }
+    }
+
+    if (messageCount > 0) {
+      int cycle = millis() / 1000 % (messageCount * 10);
+      int cycle2 = (millis() % 5000) / 2500;
+      cycle = cycle / 10;
+  
+      lcd.home();
+      lcd.print(messages + (17 * cycle * 3));
+      lcd.setCursor(0, 1);
+      lcd.print(messages + (17 * (cycle * 3 + cycle2 + 1)));
+    }
 
     delay(100); 
 }
