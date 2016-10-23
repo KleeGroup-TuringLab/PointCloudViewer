@@ -3,6 +3,10 @@
 
 #define DO_CONFIG false
 #define DO_FORMAT false
+#define WIFI_SSID "SSID"
+#define WIFI_PASSWORD "PASSWORD"
+
+const char* configFile = "/wifi.cfg";
 
 rgb_lcd lcd;
 
@@ -29,9 +33,11 @@ void setup() {
   
     // Ecriture du fichier de configuration
     lcd.setColor(BLUE);
-    File f = SPIFFS.open("/wifi.cfg", "w");
-    f.println("SID");
-    f.println("Password");
+    File f = SPIFFS.open(configFile, "w");
+    f.print(String(WIFI_SSID));
+    f.print("\n");
+    f.print(String(WIFI_PASSWORD));
+    f.print("\n");
     f.close();
   }
 }
@@ -41,13 +47,14 @@ void loop() {
   lcd.setColor(GREEN);
 
   // Lecture du fichier de configuration
-  File f = SPIFFS.open("/wifi.cfg", "r");
-  String sid = f.readStringUntil('\n');
+  File f = SPIFFS.open(configFile, "r");
+  String ssid = f.readStringUntil('\n');
   String password = f.readStringUntil('\n');
+  f.close();
 
-  // Affichage du SID
+  // Affichage du SSID
   lcd.home();
-  lcd.print(sid);
+  lcd.print(password);
 
   delay(3000);
 }
