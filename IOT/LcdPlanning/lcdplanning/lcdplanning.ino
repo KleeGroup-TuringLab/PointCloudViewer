@@ -216,9 +216,8 @@ void loop() {
     if (WiFi.status() != WL_CONNECTED) {
       lcd.setRGB(colorR, colorG, colorB); 
     } else {
-      lcd.setColor(GREEN);
-
       if ((millis() - lastSync > syncInterval) || (lastSync == 0)) {
+        lcd.setColor(GREEN);
         if (retrievePlanning()) {
           lastSync = millis();
 
@@ -228,6 +227,8 @@ void loop() {
           // Met à jour les messages.
           readMessages();
         }
+      } else {
+        lcd.setColor(BLUE);
       }
     }
 
