@@ -6,7 +6,10 @@ Pour brider les cables et tuyaux sur les deux gaines (par un long colson) :
 
 Pour brider les cables et tuyaux sur la platine de la broche (vis et colson) :
   * Garde : bridage haut
-  * Bloc-outil : bridage bas
+  * Garde-bas : bridage bas
   
 Côté arrière, pour brancher l'aspirateur :
   * Connecteur_aspi
+
+Pour les raccords d'air :
+  * raccord

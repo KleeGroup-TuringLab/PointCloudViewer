@@ -19,30 +19,8 @@ module plug(diam, wall, ajust) {
     }
 }
 
-/*
-union(){
-    // Outputs
-    for (i=[0:1:output-1]) {
-        translate([15*i, 0, -2]) plug(5, 0.8, 0.2);
-    }
-    // One input
-    translate([15*(output-1)/2, 0, -8]) rotate([180, 0, 0]) plug(10, 1, 0.5);
-    // Central bloc
-    difference() {
-        translate([-7.5,-10.5/2,-10]) cube([15*output,10.5,10]);
-        // Outputs
-        for (i=[0:1:output-1]) {
-            translate([15*i, 0, -5]) cylinder(h=10,d=5*0.7-2*0.2);
-        }
-        // input
-        translate([15*(output-1)/2, 0, -7]) rotate([180, 0, 0]) cylinder(h=4,d=10*0.8-2);
-        // Central bloc
-        translate([2-7.5,2-10.5/2,2-10]) cube([15*output-4,10.5-4,10-4]);
-    }
-}
-*/
 union() {
      translate([0, 0, -2]) plug(8, 0.8, 0.3);
      rotate([180, 0, 0])
-     translate([0, 0, -2]) plug(8.5, 0.8, 0.3);
+     translate([0, 0, -2]) plug(9.5, 0.8, 0.3);
 }
