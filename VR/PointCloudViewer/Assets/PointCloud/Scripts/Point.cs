@@ -11,39 +11,26 @@ public class Point {
 
     internal String meshName;
     internal int[] meshIdx;
-    //internal Color[] meshColors;
+    internal Color[] meshColors;
 
     public Point() {
 	}
 
-    internal void inMesh(String meshName,  int[] meshIdx/*, Color[] meshColors*/)
-    {
+    internal void inMesh(String meshName,  int[] meshIdx, Color[] meshColors)    {
         this.meshName = meshName;
         this.meshIdx = meshIdx;
-       // this.meshColors = meshColors;
-
+        this.meshColors = meshColors;
     }
 
-    internal String Highlight()
-    {
-  
+    internal String Highlight()    {
         defaultColor = color;
         color = Color.green;
         return meshName;
     }
 
-    internal String unHighlight()
-    {
-        
+    internal String unHighlight()    {
         color = defaultColor;
         return meshName;
     }
 
-    internal void applyColors(Color[] meshColors)
-    {
-       for (int i = 0; i < meshIdx.Length; i++)
-        {
-            meshColors[i] = color;
-        }
-    }
 }

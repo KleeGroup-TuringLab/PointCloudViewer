@@ -19,8 +19,8 @@ public class PointCloudManager : MonoBehaviour {
     // PointCloud
     private GameObject pointCloud;
     public bool pointsCloud; //Points
-    private float maxHueErrorPct = 0.2f;
-    private float maxNormalsErrorPct = 0.2f;
+    private float maxHueErrorPct = 0.1f;
+    private float maxNormalsErrorPct = 1f;
     
     public bool normalsCloud; //Normals
     public bool facesCloud; //Faces
@@ -67,7 +67,7 @@ public class PointCloudManager : MonoBehaviour {
 
     private void Update()
     {
-        int group = Mathf.RoundToInt(Mathf.PingPong(Time.time * 0.5f, (float)groupMeshVertice.Count - 1));
+        int group = Mathf.RoundToInt(Mathf.PingPong(Time.time * 0.25f, (float)groupMeshVertice.Count - 1));
         if (Time.time > 15f && loaded)
         {
             if (group != previousGroup)
@@ -76,15 +76,13 @@ public class PointCloudManager : MonoBehaviour {
                 Debug.Log("Hightlight group : " + group + "/" + groupMeshVertice.Count);
                 float started = Time.realtimeSinceStartup;
                 int i = 0;
-                foreach (KeyValuePair<string, PointOctree<Point>> entry in groupMeshVertice)
-                {
-                    if (i == previousGroup)
-                    {
+                foreach (KeyValuePair<string, PointOctree<Point>> entry in groupMeshVertice) {
+                    if (i == previousGroup) {
                         int k = 0;
                         PointOctree<Point> octree = entry.Value;
                         foreach (Point point in octree.GetAll())
                         {
-                            String meshName = point.unHighlight();
+                             String meshName = point.unHighlight();
                             List<Point> existingPoints = null;
                             if (!pointsToUpdate.TryGetValue(meshName, out existingPoints))  {
                                 // Create if not exists in dictionary
@@ -95,37 +93,34 @@ public class PointCloudManager : MonoBehaviour {
                         }
                         //Debug.Log("unHightlight points : " + entry.Key + " pointsToUpdate:" + k + "/" + octree.GetAll().Count);
                     }
-                    if (i == group)
-                    {
+                    if (i == group) {
                         int k = 0;
                         PointOctree<Point> octree = entry.Value;
-                        foreach (Point point in octree.GetAll())
-                        {
+                        foreach (Point point in octree.GetAll()) {
                             String meshName = point.Highlight();
                             List<Point> existingPoints = null;
-                            if (!pointsToUpdate.TryGetValue(meshName, out existingPoints))
-                            {
+                            if (!pointsToUpdate.TryGetValue(meshName, out existingPoints)) {
                                 // Create if not exists in dictionary
                                 existingPoints = pointsToUpdate[meshName] = new List<Point>();
                             }
                             k++;
                             existingPoints.Add(point);
                         }
-                        //Debug.Log("Hightlight points : " + entry.Key+ " pointsToUpdate:" + k+"/"+ octree.GetAll().Count );
+                        Debug.Log("Hightlight points : " + entry.Key+ " pointsToUpdate:" + k+"/"+ octree.GetAll().Count );
                         previousGroup = group;
                     }
                     i++;
                 }
                 Debug.Log("Hightlight points done in " + (Time.realtimeSinceStartup-started) + "s");
                 started = Time.realtimeSinceStartup;
-                foreach (MeshFilter meshFilter in this.GetComponentsInChildren<MeshFilter>())
-                {
-                    if(pointsToUpdate.ContainsKey(meshFilter.mesh.name))
-                    {
-                        Color[] colors = meshFilter.mesh.colors;
+                foreach (MeshFilter meshFilter in this.GetComponentsInChildren<MeshFilter>()) {
+                    if(pointsToUpdate.ContainsKey(meshFilter.mesh.name)) {
+                        Color[] colors = null;
                         List<Point> updatedPoints = pointsToUpdate[meshFilter.mesh.name];
-                        foreach (Point point in updatedPoints)
-                        {
+                        foreach (Point point in updatedPoints) {
+							if (colors == null) {
+								colors = point.meshColors;
+							}
                             foreach (int idx in point.meshIdx) { 
                                 colors[idx] = point.color;
                             }
@@ -133,8 +128,7 @@ public class PointCloudManager : MonoBehaviour {
                         meshFilter.mesh.colors = colors;
                         //Debug.Log("Done Hightlight mesh : " + meshFilter.mesh.name);
                         //Debug.Log("Hightlight mesh in " + (Time.realtimeSinceStartup - started) + "s");
-                    } else
-                    {
+                    } /*else  {
                         String log = "not found mesh : " + meshFilter.mesh.name + " in ";
                         foreach (String name in pointsToUpdate.Keys)
                         {
@@ -142,7 +136,7 @@ public class PointCloudManager : MonoBehaviour {
                         }
                         Debug.Log(log);
 
-                    }
+                    }*/
                 }
             }
             /*if (group != previousGroup)
@@ -208,7 +202,6 @@ public class PointCloudManager : MonoBehaviour {
         center = pointCloud.GetComponentInChildren<MeshFilter>().mesh.bounds.center;
         Debug.Log("size : " + pointCloud.GetComponentInChildren<MeshFilter>().mesh.bounds.size + "  center:" + pointCloud.GetComponentInChildren<MeshFilter>().mesh.bounds.center);
         Debug.Log("center : " + center + "  size:" + size);
-        Debug.Log("should center: (-5.6, 2.4, 6.2)  size: (165.0, 62.7, 93.5)");
 
 
         this.GetComponent<BoxCollider>().size = size;
@@ -381,7 +374,7 @@ public class PointCloudManager : MonoBehaviour {
 
         for (int i = 0; i < nPoints; ++i) {
             Point point = points[id * limitPoints + i];
-            point.inMesh(mesh.name, new int[] { i });
+			point.inMesh(mesh.name, new int[] { i }, myColors);
             myPoints[i] = (point.pos - center);
             indecies[i] = i;
             myColors[i] = point.color;
@@ -482,7 +475,7 @@ public class PointCloudManager : MonoBehaviour {
             //Debug.Log("triangles[" + meshTrIndice + "] : " + myPoints[myTriangles[meshTrIndice]] + ", " + myPoints[myTriangles[meshTrIndice + 1]] + ", " + myPoints[myTriangles[meshTrIndice + 2]]);
             //Debug.Log("triangles[" + meshTrIndice + 3 + "] : " + myPoints[myTriangles[meshTrIndice]] + ", " + myPoints[myTriangles[meshTrIndice + 2]] + ", " + myPoints[myTriangles[meshTrIndice + 3]]);
 
-            point.inMesh(mesh.name, new int[] { meshPtIndice, meshPtIndice + 1, meshPtIndice + 2, meshPtIndice + 3 });
+			point.inMesh(mesh.name, new int[] { meshPtIndice, meshPtIndice + 1, meshPtIndice + 2, meshPtIndice + 3 }, myColors);
             if (detectNormals)
             {
                 addToGroupMeshVertice(point, new int[] { meshPtIndice, meshPtIndice + 1, meshPtIndice + 2, meshPtIndice + 3 }, myNormals, myColors);
